@@ -41,17 +41,28 @@ scene.add(ground);
 
 // Load JSONL
 async function loadScene() {
+  // Remove previously rendered towers and labels
+  scene.children
+    .filter(obj => obj.name === 'liquidityTower')
+    .forEach(obj => scene.remove(obj));
   const res = await fetch('data/price_log.jsonl');
   const text = await res.text();
   const lines = text.trim().split('\n').map(line => JSON.parse(line));
 
   const pairMap = {
-    'SHT/USDC': { x: -20, color: 0x00ffff },
-    'SHT/ETH': { x: 0, color: 0xff00ff },
-    'SHT/POL': { x: 20, color: 0xffff00 },
+    'SHT/USDC': { x: -20, color: 0x00ffff },       // Cyan
+    'SHT/ETH': { x: 0, color: 0xcc3300 },          // Brick red / orange
+    'SHT/POL': { x: 20, color: 0x4b0082 },         // Deep purple (Indigo)
   };
 
+  const latestEntries = {};
   lines.forEach(entry => {
+    if (!latestEntries[entry.pair] || new Date(entry.timestamp) > new Date(latestEntries[entry.pair].timestamp)) {
+      latestEntries[entry.pair] = entry;
+    }
+  });
+  
+  Object.values(latestEntries).forEach(entry => {
     const pairInfo = pairMap[entry.pair];
     const price = entry.price_usdc_per_sht || entry.price_eth_per_sht || entry.price_pol_per_sht;
     const liquidity = entry.liquidity;
@@ -72,7 +83,16 @@ async function loadScene() {
 
     console.log(`${entry.pair} | price: ${price} | height: ${height}`);
 
-    const liquidityInUSD = liquidity * price;
+    let liquidityInUSD = 0;
+    
+    if (entry.pair === 'SHT/USDC') {
+      liquidityInUSD = liquidity / 1e6; // USDC has 6 decimals
+    } else if (entry.pair === 'SHT/ETH' && entry.eth_usd) {
+      liquidityInUSD = (liquidity / 1e18) * entry.eth_usd;
+    } else if (entry.pair === 'SHT/POL' && entry.pol_usd) {
+      liquidityInUSD = (liquidity / 1e18) * entry.pol_usd;
+    }
+    
     const radius = Math.log10(liquidityInUSD + 1) * 1.0;
     console.log(`${entry.pair} | USD: ${liquidityInUSD.toFixed(2)} | radius: ${radius.toFixed(2)}`);
 
@@ -87,6 +107,7 @@ async function loadScene() {
       roughness: 0.2
     });
     const cube = new THREE.Mesh(geometry, material);
+    cube.name = 'liquidityTower';
     cube.position.set(pairInfo.x, height / 2, price * 50);
     scene.add(cube);
 
@@ -106,10 +127,13 @@ async function loadScene() {
 
     const baseLabelDiv = document.createElement('div');
     baseLabelDiv.className = 'label';
-    baseLabelDiv.textContent = `Liquidity: ${liquidity.toLocaleString()}`;
+    baseLabelDiv.textContent = `Liquidity: $${liquidityInUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
     baseLabelDiv.style.color = 'gray';
     baseLabelDiv.style.fontSize = '0.7em';
     baseLabelDiv.style.textAlign = 'center';
+    baseLabelDiv.style.backgroundColor = 'rgba(0,0,0,0.4)';
+    baseLabelDiv.style.padding = '2px 6px';
+    baseLabelDiv.style.borderRadius = '4px';
 
     const baseLabel = new THREE.CSS2DObject(baseLabelDiv);
     baseLabel.position.set(0, -0.5, 0);

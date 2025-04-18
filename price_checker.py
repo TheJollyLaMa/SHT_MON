@@ -21,21 +21,37 @@ log_path = Path("data/price_log.jsonl")
 log_path.parent.mkdir(exist_ok=True)
 
 def get_live_usd_prices():
-    url = "https://api.coingecko.com/api/v3/simple/price"
-    params = {
-        "ids": "ethereum,polygon",
-        "vs_currencies": "usd"
-    }
+    eth_usd = None
+    pol_usd = None
+
+    # Fetch ETH price
     try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-        eth_usd = data["ethereum"]["usd"]
-        pol_usd = data["polygon"]["usd"]
-        return eth_usd, pol_usd
+        eth_response = requests.get("https://api.coingecko.com/api/v3/simple/price", params={"ids": "ethereum", "vs_currencies": "usd"})
+        eth_response.raise_for_status()
+        eth_data = eth_response.json()
+        eth_usd = eth_data.get("ethereum", {}).get("usd")
+        logging.info(f"CoinGecko ETH response: {eth_data}")
     except Exception as e:
-        logging.warning(f"Failed to fetch live prices: {e}")
-        return 3200.0, 0.90  # fallback
+        logging.warning(f"Failed to fetch ETH price: {e}")
+
+    # Fetch POL price
+    try:
+        pol_response = requests.get("https://api.coingecko.com/api/v3/simple/price", params={"ids": "polygon-ecosystem-token", "vs_currencies": "usd"})
+        pol_response.raise_for_status()
+        pol_data = pol_response.json()
+        pol_usd = pol_data.get("polygon-ecosystem-token", {}).get("usd")
+        logging.info(f"CoinGecko POL response: {pol_data}")
+    except Exception as e:
+        logging.warning(f"Failed to fetch POL price: {e}")
+
+    if eth_usd is None:
+        eth_usd = -0.99  # fallback
+        logging.warning("Using fallback ETH/USD price")
+    if pol_usd is None:
+        pol_usd = -0.99  # fallback
+        logging.warning("Using fallback POL/USD price")
+
+    return eth_usd, pol_usd
 
 def fetch_price_from_pool(pool_env_var, label, base_token, eth_usd, pol_usd):
     try:
