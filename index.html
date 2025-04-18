@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SHT Liquidity Universe</title>
+  <style>
+    body { margin: 0; overflow: hidden; background-color: black; }
+    canvas {
+        display: block;
+        outline: none;
+        z-index: 10;
+    }
+    .labelRenderer {
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+    <div style="position: absolute; top: 10px; left: 10px; color: white; font-family: sans-serif;">
+        <h1 style="margin: 0; font-size: 1.5em;">SHT Liquidity Universe</h1>
+        <img src="img/Quickswap.png" alt="Quickswap Logo" style="height: 40px; margin-top: 4px;">
+        <p style="font-size: 0.9em;">
+          Each tower represents a liquidity pool pair. <br/>
+          Height = USD price of SHT in that pool. <br/>
+          Radius = liquidity in USD. <br/>
+          Color = token pair • Glow = pool activity.
+        </p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r123/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.123.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.123.0/examples/js/renderers/CSS2DRenderer.js"></script>
+
+    <script src="three-scene.js"></script>
+
+</body>
+</html>
